@@ -1,1 +1,93 @@
 
+<?php
+// C4: Comparación de búsqueda lineal y binaria para códigos de estudiantes.
+// Ejecutar: php busqueda.php
+
+function busquedaLineal(array $datos, int $objetivo): int {
+    foreach ($datos as $i => $valor) {
+        if ($valor === $objetivo) return $i;
+    }
+    return -1;
+}
+
+function busquedaBinaria(array $datos, int $objetivo): int {
+    $izq = 0; $der = count($datos) - 1;
+    while ($izq <= $der) {
+        $medio = intdiv($izq + $der, 2);
+        if ($datos[$medio] === $objetivo) return $medio;
+        if ($datos[$medio] < $objetivo) $izq = $medio + 1;
+        else $der = $medio - 1;
+    }
+    return -1;
+}
+
+function medir(callable $funcion, array $datos, int $objetivo): float {
+    $inicio = hrtime(true);
+    $resultado = $funcion($datos, $objetivo);
+    $fin = hrtime(true);
+    if ($resultado === -1) throw new RuntimeException('No se encontró el estudiante.');
+    return ($fin - $inicio) / 1_000_000; // milisegundos
+}
+
+$cantidad = 100000;
+$codigos = range(100001, 100000 + $cantidad); // datos ordenados
+$objetivo = $codigos[$cantidad - 1]; // último registro: escenario desfavorable para lineal
+
+// Calentamiento: una ejecución de cada algoritmo que no se incluye en el promedio.
+busquedaLineal($codigos, $objetivo);
+busquedaBinaria($codigos, $objetivo);
+
+$resultados = [];
+foreach ([ 'Lineal' => 'busquedaLineal', 'Binaria' => 'busquedaBinaria' ] as $nombre => $funcion) {
+    $tiempos = [];
+    for ($i = 0; $i < 3; $i++) $tiempos[] = medir($funcion, $codigos, $objetivo);
+    $resultados[$nombre] = ['tiempos' => $tiempos, 'promedio' => array_sum($tiempos) / 3];
+}
+$cociente = $resultados['Lineal']['promedio'] / max($resultados['Binaria']['promedio'], 0.000000001);
+
+printf("C4 - BÚSQUEDA DE ESTUDIANTES\nDatos: %s códigos ordenados | Código buscado: %d\n\n", number_format($cantidad), $objetivo);
+printf("%-12s | %-12s | %-12s | %-12s | %-12s\n", 'Algoritmo', 'Prueba 1 ms', 'Prueba 2 ms', 'Prueba 3 ms', 'Promedio ms');
+foreach ($resultados as $nombre => $r) printf("%-12s | %12.6f | %12.6f | %12.6f | %12.6f\n", $nombre, $r['tiempos'][0], $r['tiempos'][1], $r['tiempos'][2], $r['promedio']);
+printf("\nCociente (lineal / binaria): %.2f veces\n", $cociente);
+printf("Nota: la búsqueda binaria requiere que los códigos estén ordenados.\n");
+-------------------------------------------------------------------------------------------------------------------------------------
+C4 - BÚSQUEDA DE ESTUDIANTES
+Datos: 100,000 códigos ordenados | Código buscado: 200000
+
+Algoritmo    | Prueba 1 ms  | Prueba 2 ms  | Prueba 3 ms  | Promedio ms 
+Lineal       |     1.129105 |     1.010708 |     1.078079 |     1.072631
+Binaria      |     0.001462 |     0.000691 |     0.000621 |     0.000925
+
+Cociente (lineal / binaria): 1160.02 veces
+Nota: la búsqueda binaria requiere que los códigos estén ordenados.
+--------------------------------------------------------------------------------------------------------------------------------------
+# Clase 4 — Comparación de búsqueda lineal y búsqueda binaria
+
+## Objetivo
+Comparar cuánto tarda la búsqueda lineal y la búsqueda binaria al localizar el código de un estudiante.
+
+## Datos y procedimiento
+Se generó una lista ordenada de **100.000 códigos**, desde 100001 hasta 200000. Se buscó el código **200000**, ubicado al final de la lista. Esto representa un caso desfavorable para la búsqueda lineal y permite observar la diferencia entre revisar uno por uno y dividir el intervalo a la mitad.
+
+1. Se ejecutó una vez cada algoritmo como calentamiento; esos tiempos no se incluyeron.
+2. Se realizaron tres mediciones independientes por algoritmo.
+3. Se midió con `hrtime(true)` y se convirtió el resultado a milisegundos.
+4. Se calculó el promedio de las tres pruebas.
+5. El cociente se calculó como promedio lineal / promedio binaria.
+
+## Resultados medidos
+
+| Algoritmo | Prueba 1 (ms) | Prueba 2 (ms) | Prueba 3 (ms) | Promedio (ms) |
+|---|---:|---:|---:|---:|
+| Lineal | 1.129105 | 1.010708 | 1.078079 | 1.072631 |
+| Binaria | 0.001462 | 0.000691 | 0.000621 | 0.000925 |
+
+**Cociente:** 1.072631 / 0.000925 = **1160,02 veces** aproximadamente. En esta ejecución, la búsqueda lineal tardó alrededor de 1160 veces más que la binaria.
+
+## Análisis y conclusión
+La búsqueda lineal revisa los códigos desde el principio hasta encontrar el solicitado. La búsqueda binaria compara el código del centro y descarta la mitad de los datos en cada paso; por eso necesita que la lista esté previamente ordenada.
+
+En mi sistema de registro conviene ordenar por código una sola vez si voy a realizar muchas búsquedas, porque después la búsqueda binaria localiza estudiantes con menos comparaciones. Si solamente voy a buscar una vez o la lista es muy pequeña, ordenar primero puede costar más que hacer una búsqueda lineal.
+
+## Reproducir
+Ejecutar `php busqueda.php` dentro de esta carpeta. Los tiempos pueden variar según el equipo y la carga del sistema; para una entrega basada en tu computadora, reemplaza la tabla por los nuevos resultados.
