@@ -1,4 +1,3 @@
-
 A. Análisis de los cuatro fragmentos
 Fragmento	Complejidad	Justificación
 F1	O(n)	Recorre una sola vez los n elementos.
